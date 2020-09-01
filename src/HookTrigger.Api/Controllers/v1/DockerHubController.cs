@@ -33,8 +33,9 @@ namespace HookTrigger.Api.Controllers.v1
         [ProducesResponseType(typeof(DockerHubPayload), StatusCodes.Status201Created)]
         public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload, ApiVersion version)
         {
-            //return Task.FromResult<IActionResult>(CreatedAtRoute(nameof(GetDockerTriggersAsync), new { value = "string", version }, payload));
             return Task.FromResult<IActionResult>(Ok(payload));
+
+            //return Task.FromResult<IActionResult>(CreatedAtRoute(nameof(GetDockerTriggersAsync), new { value = "string", version }, payload));
         }
 
         #endregion HttpPost
