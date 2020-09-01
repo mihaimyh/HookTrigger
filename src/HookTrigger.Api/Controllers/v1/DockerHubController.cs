@@ -19,7 +19,7 @@ namespace HookTrigger.Api.Controllers.v1
         }
 
         [HttpPost()]
-        [Produces("application/json", "application/xml")]
+        [Produces("application/json")]
         [ProducesResponseType(typeof(DockerHubPayload), StatusCodes.Status201Created)]
         public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload)
         {
