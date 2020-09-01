@@ -1,12 +1,14 @@
 ﻿using HookTrigger.Api.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
-namespace HookTrigger.Api.Controllers
+namespace HookTrigger.Api.Controllers.v1
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("v{version:ApiVersion}/[controller]")]
     public class DockerHubController : ControllerBase
     {
         private readonly ILogger<DockerHubController> _logger;
@@ -17,6 +19,8 @@ namespace HookTrigger.Api.Controllers
         }
 
         [HttpPost()]
+        [Produces("application/json", "application/xml")]
+        [ProducesResponseType(typeof(DockerHubPayload), StatusCodes.Status201Created)]
         public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload)
         {
             if (payload is null)
