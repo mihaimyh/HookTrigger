@@ -10,22 +10,18 @@ namespace HookTrigger.Api.Models
         [JsonPropertyName("push_data")]
         public PushData PushData { get; set; }
 
-        //[JsonPropertyName("repository")]
         public Repository Repository { get; set; }
     }
 
     public class PushData
     {
-        //[JsonPropertyName("images")]
         public string[] Images { get; set; }
 
         [JsonPropertyName("pushed_at")]
         public float PushedAt { get; set; }
 
-        //[JsonPropertyName("pusher")]
         public string Pusher { get; set; }
 
-        //[JsonPropertyName("tag")]
         public string Tag { get; set; }
     }
 
@@ -37,10 +33,8 @@ namespace HookTrigger.Api.Models
         [JsonPropertyName("date_created")]
         public float DateCreated { get; set; }
 
-        //[JsonPropertyName("description")]
         public string Description { get; set; }
 
-        //[JsonPropertyName("dockerfile")]
         public string Dockerfile { get; set; }
 
         [JsonPropertyName("full_description")]
