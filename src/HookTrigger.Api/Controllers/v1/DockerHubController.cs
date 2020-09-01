@@ -1,7 +1,9 @@
-﻿using HookTrigger.Api.Models;
+﻿using GenFu;
+using HookTrigger.Api.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace HookTrigger.Api.Controllers.v1
@@ -13,23 +15,45 @@ namespace HookTrigger.Api.Controllers.v1
     {
         private readonly ILogger<DockerHubController> _logger;
 
+        #region Constructor
+
         public DockerHubController(ILogger<DockerHubController> logger)
         {
             _logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
         }
 
+        #endregion Constructor
+
+        #region Methods
+
+        #region HttpPost
+
         [HttpPost()]
         [Produces("application/json")]
         [ProducesResponseType(typeof(DockerHubPayload), StatusCodes.Status201Created)]
-        public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload)
+        public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload, ApiVersion version)
         {
-            if (payload is null)
-            {
-                _logger.LogError($"A null {nameof(DockerHubPayload)} detected.");
-                return Task.FromResult<IActionResult>(BadRequest("An invalid payload was detected."));
-            }
-
-            return Task.FromResult<IActionResult>(Ok());
+            //return Task.FromResult<IActionResult>(CreatedAtRoute(nameof(GetDockerTriggersAsync), new { value = "string", version }, payload));
+            return Task.FromResult<IActionResult>(Ok(payload));
         }
+
+        #endregion HttpPost
+
+        #region HttpGet
+
+        [HttpGet(Name = nameof(GetAllDockerTriggersAsync))]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(DockerHubPayload), 200)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public Task<ActionResult<IEnumerable<DockerHubPayload>>> GetAllDockerTriggersAsync()
+        {
+            A.Configure<PushData>();
+            A.Configure<Repository>();
+            return Task.FromResult<ActionResult<IEnumerable<DockerHubPayload>>>(Ok(A.ListOf<DockerHubPayload>(10)));
+        }
+
+        #endregion HttpGet
+
+        #endregion Methods
     }
 }
