@@ -89,7 +89,6 @@ namespace HookTrigger.Api
                     };
                 });
 
-            services.AddSwaggerGen();
             services.AddApiVersioning(options =>
             {
                 options.ReportApiVersions = true;
