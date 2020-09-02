@@ -5,10 +5,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AspNetCore.ApiVersioning" Version="0.1.0-alpha" />
 		<PackageReference Include="FluentValidation.AspNetCore" Version="9.3.0-preview1" />
 		<PackageReference Include="GenFu" Version="1.6.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="4.1.1" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="4.1.1" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
 	</ItemGroup>
 </Project>
