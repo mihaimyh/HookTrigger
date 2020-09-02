@@ -2,11 +2,14 @@
 
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
+		<UserSecretsId>8641a04d-678f-42db-b9bb-4eaf7410b646</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="AspNetCore.ApiVersioning" Version="0.1.0-alpha" />
 		<PackageReference Include="FluentValidation.AspNetCore" Version="9.3.0-preview1" />
 		<PackageReference Include="GenFu" Version="1.6.0" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
 	</ItemGroup>
 </Project>
