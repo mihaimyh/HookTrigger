@@ -6,6 +6,7 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim AS build
 WORKDIR /src
 COPY ["HookTrigger.Worker/HookTrigger.Worker.csproj", "HookTrigger.Worker/"]
+COPY ["HookTrigger.Core/HookTrigger.Core.csproj", "HookTrigger.Core/"]
 RUN dotnet restore "HookTrigger.Worker/HookTrigger.Worker.csproj"
 COPY . .
 WORKDIR "/src/HookTrigger.Worker"
