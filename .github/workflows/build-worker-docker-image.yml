@@ -1,0 +1,32 @@
+---
+name: Build Worker Docker image
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**"
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          dockerfile: "src/HookTrigger.Worker/Dockerfile"
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: mihaimyh/hooktrigger-worker
+          tag_with_ref: true
