@@ -1,29 +1,64 @@
-name: .NET Core
-
+---
+name: Build API Docker image
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
     paths:
       - "src/**"
+    paths-ignore:
+      - "src/HookTrigger.Worker/**"
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
     paths:
-      - "src/**"    
-
+      - "src/**"
+    paths-ignore:
+      - "src/HookTrigger.Worker/**"    
 jobs:
-  build:
-
+  push:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.100-preview.8
-    - name: Install dependencies
-      run: dotnet restore src/HookTrigger.sln
-    - name: Build
-      run: dotnet build src/HookTrigger.sln --configuration Release --no-restore
-    - name: Test
-      run: dotnet test src/HookTrigger.sln --no-restore --verbosity normal
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          dockerfile: "src/HookTrigger.Api/Dockerfile"
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: mihaimyh/hooktrigger-api
+          tag_with_ref: true
+---
+name: Build Worker Docker image
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "src/**"
+    paths-ignore:
+      - "src/HookTrigger.Api/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "src/**"
+    paths-ignore:
+      - "src/HookTrigger.Api/**"    
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          dockerfile: "src/HookTrigger.Worker/Dockerfile"
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: mihaimyh/hooktrigger-worker
+          tag_with_ref: true
