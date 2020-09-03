@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: codescu
+  name: hooktrigger-api
+  labels:
+    app: hooktrigger-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hooktrigger-api
+      tier: hooktrigger-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: hooktrigger-api
+        tier: hooktrigger-api
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_URLS
+              value: http://+:80;https://+443
+            - name: ASPNETCORE_Kestrel__Certificates__Default__Password
+              valueFrom:
+                secretKeyRef:
+                  name: connection-secrets
+                  key: kestrel-cert-password
+            - name: ASPNETCORE_Kestrel__Certificates__Default__Path
+              value: /app/tls/codescu.com.pfx
+            - name: Producer__BootstrapServers
+              value: kafka-server1.codescu.svc.cluster.local:9092            
+          image: mihaimyh/hooktrigger-api:latest
+          imagePullPolicy: Always
+          name: hooktrigger-api
+          ports:
+            - containerPort: 443
+            - containerPort: 80
+          volumeMounts:
+            - name: hooktrigger-api-storage
+              mountPath: "/app/tls"
+            - name: tz-config
+              mountPath: /etc/localtime
+            - name: ca-pemstore
+              mountPath: /etc/ssl/certs/ca.pem
+              subPath: ca.pem
+              readOnly: false
+      volumes:
+        - name: hooktrigger-api-storage
+          persistentVolumeClaim:
+            claimName: hooktrigger-api-persistent-storage
+        - name: tz-config
+          hostPath:
+            path: /usr/share/zoneinfo/Europe/Bucharest
+        - name: ca-pemstore
+          configMap:
+            name: ca-pemstore

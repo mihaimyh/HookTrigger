@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: codescu
+  name: hooktrigger-api
+  labels:
+    app: hooktrigger-api
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    name: "http"
+  - port: 443
+    targetPort: 443
+    name: "https"
+  selector:
+    app: hooktrigger-api
+    tier: hooktrigger-api
