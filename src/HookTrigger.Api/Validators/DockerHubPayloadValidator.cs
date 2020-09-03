@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using HookTrigger.Api.Models;
+using HookTrigger.Core.Models;
 
 namespace HookTrigger.Api.Validators
 {

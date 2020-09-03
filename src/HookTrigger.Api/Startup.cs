@@ -1,6 +1,10 @@
 ﻿using AspNetCore.ApiVersioning;
+using Confluent.Kafka;
 using FluentValidation.AspNetCore;
+using HookTrigger.Api.Services;
+using HookTrigger.Core.Models;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Net;
 
 namespace HookTrigger.Api
 {
@@ -36,8 +41,14 @@ namespace HookTrigger.Api
 
             app.UseAuthorization();
 
+            app.UseHealthChecks("/health", new HealthCheckOptions
+            {
+                Predicate = r => r.Tags.Contains("kafka")
+            });
+
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHealthChecksUI();
                 endpoints.MapControllers();
             });
         }
@@ -45,6 +56,11 @@ namespace HookTrigger.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var config = new ProducerConfig();
+            Configuration.Bind("Producer", config);
+            config.ClientId = Dns.GetHostName();
+            services.AddSingleton(config);
+
             services.AddControllers()
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())
                 .ConfigureApiBehaviorOptions(setupAction =>
@@ -70,6 +86,15 @@ namespace HookTrigger.Api
                 });
 
             services.AddVersioning();
+
+            services.AddScoped<IMessageSenderService<DockerHubPayload>, KafkaProducer>();
+
+            services.AddHealthChecks()
+                .AddKafka(config, tags: new string[] { "kafka" });
+            //.AddSqlServer(Configuration.GetConnectionString("Default"), tags: new string[] { "sqlserver" });
+            services
+                .AddHealthChecksUI()
+                .AddInMemoryStorage();
         }
     }
 }
