@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace HookTrigger.Api.Models
+namespace HookTrigger.Core.Models
 {
     public class PushData
     {

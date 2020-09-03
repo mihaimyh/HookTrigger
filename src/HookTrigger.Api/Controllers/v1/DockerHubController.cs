@@ -1,8 +1,10 @@
 ﻿using GenFu;
-using HookTrigger.Api.Models;
+using HookTrigger.Api.Services;
+using HookTrigger.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,12 +16,14 @@ namespace HookTrigger.Api.Controllers.v1
     public class DockerHubController : ControllerBase
     {
         private readonly ILogger<DockerHubController> _logger;
+        private readonly IMessageSenderService<DockerHubPayload> _messageSender;
 
         #region Constructor
 
-        public DockerHubController(ILogger<DockerHubController> logger)
+        public DockerHubController(ILogger<DockerHubController> logger, IMessageSenderService<DockerHubPayload> messageSender)
         {
-            _logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _messageSender = messageSender ?? throw new ArgumentNullException(nameof(messageSender));
         }
 
         #endregion Constructor
@@ -31,11 +35,11 @@ namespace HookTrigger.Api.Controllers.v1
         [HttpPost()]
         [Produces("application/json")]
         [ProducesResponseType(typeof(DockerHubPayload), StatusCodes.Status201Created)]
-        public Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload, ApiVersion version)
+        public async Task<IActionResult> CreateDockerHubPayloadAsync([FromBody] DockerHubPayload payload, ApiVersion version)
         {
-            return Task.FromResult<IActionResult>(Ok(payload));
+            await _messageSender.SendMessageAsync(payload);
 
-            //return Task.FromResult<IActionResult>(CreatedAtRoute(nameof(GetDockerTriggersAsync), new { value = "string", version }, payload));
+            return Ok();
         }
 
         #endregion HttpPost
