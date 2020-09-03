@@ -4,7 +4,6 @@ namespace HookTrigger.Core.Models
 {
     public class PushData
     {
-        // comment to trigger github workflow
         public string[] Images { get; set; }
 
         [JsonPropertyName("pushed_at")]
