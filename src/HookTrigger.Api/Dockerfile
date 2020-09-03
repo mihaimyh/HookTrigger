@@ -8,6 +8,7 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim AS build
 WORKDIR /src
 COPY ["HookTrigger.Api/HookTrigger.Api.csproj", "HookTrigger.Api/"]
+COPY ["HookTrigger.Core/HookTrigger.Core.csproj", "HookTrigger.Core/"]
 RUN dotnet restore "HookTrigger.Api/HookTrigger.Api.csproj"
 COPY . .
 WORKDIR "/src/HookTrigger.Api"
