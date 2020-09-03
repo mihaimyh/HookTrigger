@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: hooktrigger-api
+  name: hooktrigger-api-persistent-storage
+  namespace: codescu
+spec:
+  storageClassName: default
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 0.1Gi
+  volumeName: hooktrigger-api-storage

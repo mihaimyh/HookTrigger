@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: zookeeper-server
+  name: zookeeper-server
+  namespace: codescu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: zookeeper-server
+  template:
+    metadata:
+      labels:
+        io.kompose.network/kafka.local: "true"
+        io.kompose.service: zookeeper-server
+    spec:
+      containers:
+      - env:
+        - name: ALLOW_ANONYMOUS_LOGIN
+          value: "yes"
+        image: bitnami/zookeeper:latest
+        name: zookeeper-server
+        ports:
+        - containerPort: 2181
+      restartPolicy: Always
