@@ -16,7 +16,7 @@ namespace HookTrigger.Worker
 
         public KubernetesWorker(ILogger<KubernetesWorker> logger, ConsumerConfig config)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
