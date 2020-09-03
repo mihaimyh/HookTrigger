@@ -34,6 +34,7 @@ namespace HookTrigger.Worker
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // TODO: Move this to a service and inject it using DI
             using var consumer = new ConsumerBuilder<Null, string>(_config).Build();
             var topic = "mihai";
             try
