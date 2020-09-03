@@ -5,16 +5,14 @@ on:
     branches:
       - master
     paths:
-      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Worker/**"
       - "src/HookTrigger.Core/**"
-      - "src/HookTrigger.Models/**"
   pull_request:
     branches:
       - master
     paths:
-      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Worker/**"
       - "src/HookTrigger.Core/**"
-      - "src/HookTrigger.Models/**"
 jobs:
   push:
     runs-on: ubuntu-latest
