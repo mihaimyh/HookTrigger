@@ -5,16 +5,18 @@ on:
     branches:
       - master
     paths:
-      - "src/**"
-    paths-ignore:
-      - "src/HookTrigger.Worker/**"
+      - "src/HookTrigger.Api/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**"
+#     paths-ignore:
+#       - "src/HookTrigger.Worker/**"
   pull_request:
     branches:
       - master
     paths:
-      - "src/**"
-    paths-ignore:
-      - "src/HookTrigger.Worker/**"    
+      - "src/HookTrigger.Api/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**" 
 jobs:
   push:
     runs-on: ubuntu-latest
@@ -37,16 +39,16 @@ on:
     branches:
       - master
     paths:
-      - "src/**"
-    paths-ignore:
-      - "src/HookTrigger.Api/**"
+      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**"
   pull_request:
     branches:
       - master
     paths:
-      - "src/**"
-    paths-ignore:
-      - "src/HookTrigger.Api/**"    
+      - "HookTrigger.Worker/**"
+      - "src/HookTrigger.Core/**"
+      - "src/HookTrigger.Models/**"
 jobs:
   push:
     runs-on: ubuntu-latest
