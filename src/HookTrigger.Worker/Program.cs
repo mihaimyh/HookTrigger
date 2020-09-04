@@ -51,6 +51,7 @@ namespace HookTrigger.Worker
              .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
              .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
              .AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true)
+             .AddJsonFile("serilog.json", optional: true, reloadOnChange: true)
              .AddEnvironmentVariables();
 
             return builder.Build();

@@ -36,18 +36,18 @@ namespace HookTrigger.Api
 
             app.UseHttpsRedirection();
 
-            app.UseSerilogRequestLogging();
-
-            app.UseSwaggerr(provider);
-
-            app.UseRouting();
-
-            app.UseAuthorization();
-
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
                 Predicate = r => r.Tags.Contains("kafka")
             });
+
+            app.UseSwaggerr(provider);
+
+            app.UseSerilogRequestLogging();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
