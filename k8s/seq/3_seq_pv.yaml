@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    app: seq
+    tier: seq
+  name: seq-storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 10Gi
+  storageClassName: default
+  nfs:
+    path: /k8s/seq
+    server: 10.1.1.253
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
