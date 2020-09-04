@@ -1,0 +1,36 @@
+﻿{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning",
+        "Microsoft.AspNetCore.Authentication": "Debug",
+        "HookTrigger": "Debug"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "theme": "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Literate, Serilog.Sinks.Console",
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}"
+        }
+      },
+      {
+        "Name": "Seq",
+        "Args": {
+          "serverUrl": "http://seq.codescu.svc.cluster.local:5341"
+        }
+      }
+      //{
+      //  "Name": "File",
+      //  "Args": {
+      //    "path": "Log\\seq.log",
+      //    "rollingInterval": "Day"
+      //  }
+      //},
+    ],
+    "Enrich": [ "FromLogContext", "WithMachineName", "WithThreadId" ]
+  }
+}
