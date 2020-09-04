@@ -2,6 +2,7 @@
 using k8s.Models;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,14 +43,24 @@ namespace HookTrigger.Worker.Services
         {
             try
             {
+                //await CreateDeploymentAsync();
+
                 var deployment = await DeleteDeploymentAsync(repoName);
 
                 if (deployment != null)
                 {
-                    _logger.LogDebug("Creating a new deployment with name {Name} in namespace {Namespace}", deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
+                    _logger.LogDebug("Creating a new deployment with name {Name} in namespace {Namespace}.", deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
+
+                    deployment.Metadata.ResourceVersion = string.Empty;
 
                     var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, deployment?.Metadata?.NamespaceProperty);
+
+                    _logger.LogDebug("A new deployment with id {Id} was created at {Timestamp}.", deploy?.Metadata?.Uid, deploy?.Metadata?.CreationTimestamp);
                 }
+            }
+            catch (HttpOperationException ex)
+            {
+                _logger.LogError(ex, ex.Response.Content);
             }
             catch (Exception ex)
             {
