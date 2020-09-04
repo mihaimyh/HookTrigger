@@ -34,7 +34,7 @@ namespace HookTrigger.Api.Services
             {
                 // Send the message to our test topic in Kafka
                 var dr = await producer.ProduceAsync("mihai", message);
-                _logger.LogInformation($"Produced message '{dr.Value}' to topic {dr.Topic}, partition {dr.Partition}, offset {dr.Offset}");
+                _logger.LogInformation("Produced message '{@Message}' to topic {Topic}, partition {Partition}, offset {Offset}", dr.Value, dr.Topic, dr.Partition, dr.Offset);
 
                 producer.Flush(TimeSpan.FromSeconds(10));
             }
