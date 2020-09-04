@@ -1,5 +1,7 @@
 # HookTrigger
-![.NET Core](https://github.com/mihaimyh/HookTrigger/workflows/.NET%20Core/badge.svg)
+![Worker Docker image](https://github.com/mihaimyh/HookTrigger/workflows/Build%20Worker%20Docker%20image/badge.svg)
+
+![API Docker image](https://github.com/mihaimyh/HookTrigger/workflows/Build%20API%20Docker%20image/badge.svg)
 
 An application using AspNetCore Web API which exposes and endpoint to listen for Docker Hub webhooks.
 
