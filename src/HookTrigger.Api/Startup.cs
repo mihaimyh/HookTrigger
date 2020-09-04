@@ -2,6 +2,7 @@
 using Confluent.Kafka;
 using FluentValidation.AspNetCore;
 using HookTrigger.Api.Services;
+using HookTrigger.Core.Helpers.Serilog;
 using HookTrigger.Core.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -43,7 +44,7 @@ namespace HookTrigger.Api
 
             app.UseSwaggerr(provider);
 
-            app.UseSerilogRequestLogging();
+            app.UseSerilogRequestLogging(opts => opts.EnrichDiagnosticContext = LogEnricher.EnrichFromRequest);
 
             app.UseRouting();
 
