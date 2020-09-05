@@ -45,10 +45,12 @@ namespace HookTrigger.Worker.Services
             {
                 //await CreateDeploymentAsync();
 
-                var deployment = await DeleteDeploymentAsync(repoName);
+                var deployments = await DeleteDeploymentAsync(repoName);
 
-                if (deployment != null)
+                if (deployments?.Count > 0)
                 {
+                    var deployment = deployments?[0];
+
                     _logger.LogDebug("Creating a new deployment with name {Name} in namespace {Namespace}.", deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
 
                     deployment.Metadata.ResourceVersion = string.Empty;
@@ -129,25 +131,22 @@ namespace HookTrigger.Worker.Services
             var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, "default");
         }
 
-        private async Task<V1Deployment> DeleteDeploymentAsync(string repoName)
+        private async Task<List<V1Deployment>> DeleteDeploymentAsync(string repoName)
         {
-            var deployment = await FindDeploymentByImageAsync(repoName);
+            var deployments = await FindDeploymentByImageAsync(repoName);
 
-            if (deployment != null)
+            if (deployments?.Count > 0)
             {
-                _logger.LogDebug("Deleting deployment with name {Name}.", deployment?.Metadata?.Name);
-
-                var status = await _client.DeleteNamespacedDeploymentAsync(deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
-
-                _logger.LogDebug(status.Status);
-
-                //await _client.ReadNamespacedDeploymentAsync(nginxDeploy.Metadata.Name, "default");
+                deployments.ForEach(x => _logger.LogDebug("Deleting deployment with name {Name} from namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata.NamespaceProperty));
+                deployments.ForEach(async x => await _client.DeleteNamespacedDeploymentAsync(x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
             }
 
-            return deployment;
+            //await _client.ReadNamespacedDeploymentAsync(nginxDeploy.Metadata.Name, "default");
+
+            return deployments;
         }
 
-        private async Task<V1Deployment> FindDeploymentByImageAsync(string imageName)
+        private async Task<List<V1Deployment>> FindDeploymentByImageAsync(string imageName)
         {
             if (string.IsNullOrWhiteSpace(imageName))
             {
@@ -163,17 +162,16 @@ namespace HookTrigger.Worker.Services
                 return null;
             }
 
-            var deployment = deployments?.Items?.ToList().Find(x => x.Spec.Template.Spec.Containers[0].Image.Contains(imageName));
+            var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.Contains(imageName));
 
-            if (deployment is null)
+            if (matchingDeployments is null || matchingDeployments?.Count <= 0)
             {
-                _logger.LogDebug("No deployments having container image {image} were found.", imageName);
                 return null;
             }
 
-            _logger.LogDebug("Found deployment {name} under namespace {namespace}.", deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
+            matchingDeployments.ForEach(x => _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
 
-            return deployment;
+            return matchingDeployments;
         }
     }
 }
