@@ -55,9 +55,17 @@ namespace HookTrigger.Worker.Services
 
                     deployment.Metadata.ResourceVersion = string.Empty;
 
+                    if (!string.IsNullOrWhiteSpace(tag))
+                    {
+                        _logger.LogDebug("Setting image tag to {Tag}.", tag);
+                        var image = deployment.Spec.Template.Spec.Containers[0].Image;
+                        image = $"{deployment.Spec.Template.Spec.Containers[0].Image}:{tag}";
+                        _logger.LogDebug("New image name is {Image}", image);
+                    }
+
                     var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, deployment?.Metadata?.NamespaceProperty);
 
-                    _logger.LogDebug("A new deployment with id {Id} was created at {Timestamp}.", deploy?.Metadata?.Uid, deploy?.Metadata?.CreationTimestamp);
+                    _logger.LogDebug("A new deployment with id {Id} and image {Image} was created at {Timestamp}.", deploy?.Metadata?.Uid, deploy?.Spec?.Template?.Spec?.Containers?[0]?.Image, deploy?.Metadata?.CreationTimestamp);
                 }
                 else
                 {
