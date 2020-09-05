@@ -176,9 +176,16 @@ namespace HookTrigger.Worker.Services
 
             var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Equals(imageName.ToLowerInvariant()));
 
-            if (matchingDeployments is null || matchingDeployments?.Count <= 0)
+            if (matchingDeployments?.Count <= 0)
             {
-                return null;
+                var deploymentsContainingName = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Contains(imageName.ToLowerInvariant()));
+
+                _logger.LogWarning("No deployments with name perfect matching {Name} were found.", imageName);
+
+                if (deploymentsContainingName?.Count > 0)
+                {
+                    deploymentsContainingName.ForEach(x => _logger.LogDebug("Found following deployment with {Name} in namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
+                }
             }
 
             matchingDeployments.ForEach(x => _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
