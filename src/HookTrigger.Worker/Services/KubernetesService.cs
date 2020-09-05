@@ -174,7 +174,7 @@ namespace HookTrigger.Worker.Services
                 return null;
             }
 
-            var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Equals(imageName.ToLowerInvariant()));
+            var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.Split(":")[0].ToLowerInvariant().Equals(imageName.ToLowerInvariant()));
 
             if (matchingDeployments?.Count <= 0)
             {
