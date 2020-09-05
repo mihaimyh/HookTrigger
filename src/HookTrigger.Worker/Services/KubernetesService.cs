@@ -58,9 +58,15 @@ namespace HookTrigger.Worker.Services
                     if (!string.IsNullOrWhiteSpace(tag))
                     {
                         _logger.LogDebug("Setting image tag to {Tag}.", tag);
-                        var image = deployment.Spec.Template.Spec.Containers[0].Image;
-                        image = $"{deployment.Spec.Template.Spec.Containers[0].Image}:{tag}";
-                        _logger.LogDebug("New image name is {Image}", image);
+
+                        var image = deployment?.Spec?.Template?.Spec?.Containers?[0]?.Image?.Split(":")[0];
+
+                        if (!string.IsNullOrWhiteSpace(image))
+                        {
+                            image = $"{image}:{tag}";
+                            _logger.LogDebug("New image name is {Image}", image);
+                            deployment.Spec.Template.Spec.Containers[0].Image = image;
+                        }
                     }
 
                     var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, deployment?.Metadata?.NamespaceProperty);
