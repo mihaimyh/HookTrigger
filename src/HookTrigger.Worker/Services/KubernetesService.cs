@@ -184,11 +184,11 @@ namespace HookTrigger.Worker.Services
 
                 if (deploymentsContainingName?.Count > 0)
                 {
-                    deploymentsContainingName.ForEach(x => _logger.LogDebug("Found following deployment with {Name} in namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
+                    deploymentsContainingName?.ForEach(x => _logger.LogDebug("Found following deployment with {Name} in namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
                 }
             }
 
-            matchingDeployments.ForEach(x => _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
+            matchingDeployments?.ForEach(x => _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
 
             return matchingDeployments;
         }
