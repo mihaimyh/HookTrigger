@@ -59,6 +59,10 @@ namespace HookTrigger.Worker.Services
 
                     _logger.LogDebug("A new deployment with id {Id} was created at {Timestamp}.", deploy?.Metadata?.Uid, deploy?.Metadata?.CreationTimestamp);
                 }
+                else
+                {
+                    _logger.LogDebug("No deployments were found.");
+                }
             }
             catch (HttpOperationException ex)
             {
@@ -162,7 +166,7 @@ namespace HookTrigger.Worker.Services
                 return null;
             }
 
-            var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.Contains(imageName));
+            var matchingDeployments = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Equals(imageName.ToLowerInvariant()));
 
             if (matchingDeployments is null || matchingDeployments?.Count <= 0)
             {
