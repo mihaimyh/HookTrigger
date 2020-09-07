@@ -23,18 +23,33 @@ namespace HookTrigger.Api.Services
             var serializedDockerHubPayload = JsonSerializer.Serialize(payload);
 
             // Create a producer that can be used to send messages to Kafka that have no key and a value of type string
-            using var producer = new ProducerBuilder<Null, string>(_producerConfig).Build();
+            using var producer = new ProducerBuilder<Null, string>(_producerConfig)
+             .SetErrorHandler((p, e) =>
+             {
+                 LogError(e);
+             })
+             .SetLogHandler((_, logHandler) =>
+             {
+                 _logger.LogInformation(logHandler.Message);
+             })
+             .Build();
 
             // Construct the message to send (generic type must match what was used above when creating the producer)
             var message = new Message<Null, string>
             {
                 Value = serializedDockerHubPayload
             };
+
             // Send the message to our test topic in Kafka
             var dr = await producer.ProduceAsync("mihai", message);
             _logger.LogInformation("Produced message '{@Message}' to topic {Topic}, partition {Partition}, offset {Offset}", dr.Value, dr.Topic, dr.Partition, dr.Offset);
 
             producer.Flush(TimeSpan.FromSeconds(10));
+        }
+
+        private void LogError(Error e)
+        {
+            _logger.LogError("The following error {Error} occurred while trying to produce message.", e.Reason);
         }
     }
 }
