@@ -2,6 +2,7 @@
 using Confluent.Kafka;
 using FluentValidation.AspNetCore;
 using HookTrigger.Api.Services;
+using HookTrigger.Core.Helpers;
 using HookTrigger.Core.Helpers.Serilog;
 using HookTrigger.Core.Models;
 using Microsoft.AspNetCore.Builder;
@@ -32,7 +33,11 @@ namespace HookTrigger.Api
         {
             if (env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();
+                app.UseExceptionHandler("/error-local-development");
+            }
+            else
+            {
+                app.UseExceptionHandler("/error");
             }
 
             app.UseHttpsRedirection();
@@ -65,7 +70,7 @@ namespace HookTrigger.Api
             config.ClientId = Dns.GetHostName();
             services.AddSingleton(config);
 
-            services.AddControllers()
+            services.AddControllers(o => o.Filters.Add(new HttpResponseExceptionFilter()))
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())
                 .ConfigureApiBehaviorOptions(setupAction =>
                 {
