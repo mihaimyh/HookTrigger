@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: codescu
+  name: codescu-seq-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+#    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-hash: sha1
+    nginx.ingress.kubernetes.io/session-cookie-name: REALTIMESERVERID
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    ingress.kubernetes.io/proxy-body-size: 50m
+spec:
+  tls:
+  - hosts:
+    - seq.codescu.com
+    secretName: wildcard-codescu-com
+  rules:
+  - host: seq.codescu.com
+    http:
+      paths:
+      - backend:
+          serviceName: seq
+          servicePort: 80
