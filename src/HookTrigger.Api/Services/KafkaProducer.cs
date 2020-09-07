@@ -30,18 +30,11 @@ namespace HookTrigger.Api.Services
             {
                 Value = serializedDockerHubPayload
             };
-            try
-            {
-                // Send the message to our test topic in Kafka
-                var dr = await producer.ProduceAsync("mihai", message);
-                _logger.LogInformation("Produced message '{@Message}' to topic {Topic}, partition {Partition}, offset {Offset}", dr.Value, dr.Topic, dr.Partition, dr.Offset);
+            // Send the message to our test topic in Kafka
+            var dr = await producer.ProduceAsync("mihai", message);
+            _logger.LogInformation("Produced message '{@Message}' to topic {Topic}, partition {Partition}, offset {Offset}", dr.Value, dr.Topic, dr.Partition, dr.Offset);
 
-                producer.Flush(TimeSpan.FromSeconds(10));
-            }
-            catch (ProduceException<Null, string> ex)
-            {
-                _logger.LogError(ex, "An error occurred while producing a message.");
-            }
+            producer.Flush(TimeSpan.FromSeconds(10));
         }
     }
 }
