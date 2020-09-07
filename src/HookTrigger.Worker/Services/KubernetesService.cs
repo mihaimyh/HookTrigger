@@ -151,15 +151,27 @@ namespace HookTrigger.Worker.Services
 
         private async Task<List<V1Deployment>> DeleteDeploymentAsync(string repoName)
         {
+            //TODO: Move this to appsettings.json
+            var ignoredNamespaces = new List<string>
+            {
+                    "cert-manager", "ingress-nginx", "kube-system", "kubernetes-dashboard","metallb-system"
+            };
+
             var deployments = await FindDeploymentByImageAsync(repoName);
 
             if (deployments?.Count > 0)
             {
+                foreach (var deploy in deployments.Where(deploy => ignoredNamespaces.Contains(deploy?.Metadata?.NamespaceProperty?.ToLowerInvariant())))
+                {
+                    _logger.LogWarning("An attempt to restart a system deployment {Deployment} from the {Namespace} namespace was performed.",
+                        deploy?.Metadata?.Name,
+                        deploy?.Metadata?.NamespaceProperty);
+                    throw new InvalidOperationException("Cannot delete a deployment from a reserved namespace.");
+                }
+
                 deployments.ForEach(x => _logger.LogDebug("Deleting deployment with name {Name} from namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata.NamespaceProperty));
                 deployments.ForEach(async x => await _client.DeleteNamespacedDeploymentAsync(x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
             }
-
-            //await _client.ReadNamespacedDeploymentAsync(nginxDeploy.Metadata.Name, "default");
 
             return deployments;
         }
@@ -184,9 +196,9 @@ namespace HookTrigger.Worker.Services
 
             if (matchingDeployments?.Count <= 0)
             {
-                var deploymentsContainingName = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Contains(imageName.ToLowerInvariant()));
+                _logger.LogWarning("No deployments with name matching {Name} were found.", imageName);
 
-                _logger.LogWarning("No deployments with name perfect matching {Name} were found.", imageName);
+                var deploymentsContainingName = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Contains(imageName.ToLowerInvariant()));
 
                 if (deploymentsContainingName?.Count > 0)
                 {
