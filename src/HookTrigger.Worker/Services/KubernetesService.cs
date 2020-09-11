@@ -76,6 +76,8 @@ namespace HookTrigger.Worker.Services
                     }
                 }
 
+                //TODO: Return a more detailed response?
+
                 return patchedDeployments.Count;
             }
             catch (Exception ex)
