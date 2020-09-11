@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using FakeItEasy;
+using FluentAssertions;
 using HookTrigger.Worker.Brokers;
 using HookTrigger.Worker.Services;
 using k8s.Models;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -23,28 +25,30 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         }
 
         [Theory]
-        [InlineData("nginx", "latest", "test")]
-        public async Task ShouldPatchDeploymentsAsync(string imageName, string tag, string protectedNamespace)
+        [InlineData("nginx", "latest", "test", 1)]
+        [InlineData("nginx", "latest", "test", 4)]
+        [InlineData("nginx", "latest", "test", 0)]
+        public async Task ShouldPatchDeploymentsAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeployList(protectedNamespace, 2);
+            var deployList = GetDeployList(imageName, protectedNamespace, numberOfDeployments);
 
             _broker.Setup(x => x.FindDeploymentByImageAsync(imageName)).ReturnsAsync(deployList);
 
             var patchedDeploys = await _kubernetesService.PatchAllDeploymentAsync(imageName, tag);
 
-            patchedDeploys.Should().Be(2);
+            patchedDeploys.Should().Be(numberOfDeployments);
         }
 
         [Theory]
         [InlineData("nginx", "latest", "kube-system")]
-        public async Task ShouldThrowIfDeploymentsAreInProtectedNamespacesAsync(string imageName, string tag, string protectedNamespace)
+        public async Task ShouldThrowIfDeploymentsAreInProtectedNamespacesAsync(string imageName, string tag, string @namespace)
         {
             var deployList = new List<V1Deployment> {
             new V1Deployment
             {
                  Metadata = new V1ObjectMeta
                  {
-                     NamespaceProperty = protectedNamespace
+                     NamespaceProperty = @namespace
                  }
             }
             };
@@ -71,46 +75,24 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             await Assert.ThrowsAsync<ArgumentException>(patch);
         }
 
-        private static List<V1Deployment> GetDeployList(string protectedNamespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeployList(string imageName, string @namespace, int numberOfDeploys)
         {
-            var output = new List<V1Deployment>();
-
-            for (var i = 0; i < numberOfDeploys; i++)
+            var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
-                output.Add(new V1Deployment
+                b.Metadata = A.Fake<V1ObjectMeta>(aa => aa.ConfigureFake(bb => bb.NamespaceProperty = @namespace));
+                b.Spec = A.Fake<V1DeploymentSpec>(c => c.ConfigureFake(d =>
                 {
-                    Metadata = new V1ObjectMeta
-                    {
-                        NamespaceProperty = protectedNamespace
-                    },
-                    Spec = new V1DeploymentSpec
-                    {
-                        Template = new V1PodTemplateSpec
-                        {
-                            Spec = new V1PodSpec
-                            {
-                                Containers = new List<V1Container>
-                                 {
-                                     new V1Container
-                                     {
-                                         Image = "nginx"
-                                     },
-                                     new V1Container
-                                     {
-                                        Image = "nginx"
-                                     },
-                                    new V1Container
-                                    {
-                                            Image = "differentImage"
-                                    }
-                                 }
-                            }
-                        }
-                    }
-                });
-            }
+                    d.Template = A.Fake<V1PodTemplateSpec>(e =>
+                    e.ConfigureFake(f =>
+                        f.Spec = A.Fake<V1PodSpec>(g =>
+                            g.ConfigureFake(h =>
+                                h.Containers = A.CollectionOfFake<V1Container>(numberOfDeploys, i =>
+                                    i.ConfigureFake(h =>
+                                        h.Image = imageName))))));
+                }));
+            }));
 
-            return output;
+            return output.ToList();
         }
     }
 }
