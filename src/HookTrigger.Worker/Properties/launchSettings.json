@@ -3,6 +3,7 @@
     "HookTrigger.Worker": {
       "commandName": "Project",
       "environmentVariables": {
+        "KUBECONFIG": "H:\\.kube\\config",
         "DOTNET_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": "true"

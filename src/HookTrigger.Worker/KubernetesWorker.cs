@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using HookTrigger.Core.Models;
+using HookTrigger.Worker.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,12 +13,14 @@ namespace HookTrigger.Worker
     public class KubernetesWorker : BackgroundService
     {
         private readonly ConsumerConfig _config;
+        private readonly IKubernetesService _kubernetesService;
         private readonly ILogger<KubernetesWorker> _logger;
 
-        public KubernetesWorker(ILogger<KubernetesWorker> logger, ConsumerConfig config)
+        public KubernetesWorker(ILogger<KubernetesWorker> logger, ConsumerConfig config, IKubernetesService kubernetesService)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _kubernetesService = kubernetesService ?? throw new ArgumentNullException(nameof(kubernetesService));
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -32,8 +35,9 @@ namespace HookTrigger.Worker
             return base.StartAsync(cancellationToken);
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // TODO: Move this to a service and inject it using DI
             using var consumer = new ConsumerBuilder<Null, string>(_config).Build();
             var topic = "mihai";
             try
@@ -46,14 +50,14 @@ namespace HookTrigger.Worker
                     var cr = consumer.Consume(stoppingToken);
                     var message = JsonSerializer.Deserialize<DockerHubPayload>(cr.Message.Value);
                     _logger.LogInformation("Received following message from Kafka: {@message}", message);
+
+                    await _kubernetesService.RestartDeploymentAsync(message?.Repository?.RepoName, message?.PushData?.Tag);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred.");
             }
-
-            return Task.CompletedTask;
         }
     }
 }

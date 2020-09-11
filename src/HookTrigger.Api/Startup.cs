@@ -2,6 +2,7 @@
 using Confluent.Kafka;
 using FluentValidation.AspNetCore;
 using HookTrigger.Api.Services;
+using HookTrigger.Core.Helpers.Serilog;
 using HookTrigger.Core.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.AspNetCore.IPLogging;
 using System.Net;
 
 namespace HookTrigger.Api
@@ -33,18 +36,22 @@ namespace HookTrigger.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseIPAddressLogging();
+
             app.UseHttpsRedirection();
+
+            app.UseSerilogRequestLogging(opts => opts.EnrichDiagnosticContext = LogEnricher.EnrichFromRequest);
+
+            app.UseHealthChecks("/health", new HealthCheckOptions
+            {
+                Predicate = r => r.Tags.Contains("kafka")
+            });
 
             app.UseSwaggerr(provider);
 
             app.UseRouting();
 
             app.UseAuthorization();
-
-            app.UseHealthChecks("/health", new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("kafka")
-            });
 
             app.UseEndpoints(endpoints =>
             {
@@ -60,6 +67,8 @@ namespace HookTrigger.Api
             Configuration.Bind("Producer", config);
             config.ClientId = Dns.GetHostName();
             services.AddSingleton(config);
+
+            services.AddIPAddressLogging();
 
             services.AddControllers()
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())

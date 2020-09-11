@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: kafka-server1
+  name: kafka-server1
+  namespace: codescu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kafka-server1
+  template:
+    metadata:
+      labels:
+        io.kompose.network/kafka.local: "true"
+        io.kompose.service: kafka-server1
+    spec:
+      containers:
+      - env:
+        - name: ALLOW_PLAINTEXT_LISTENER
+          value: "yes"
+        - name: KAFKA_CFG_ADVERTISED_LISTENERS
+          value: PLAINTEXT://kafka-server1.codescu.svc.cluster.local:9092
+        - name: KAFKA_CFG_ZOOKEEPER_CONNECT
+          value: zookeeper-server.codescu.svc.cluster.local:2181
+        image: bitnami/kafka:latest
+        name: kafka-server1
+        ports:
+        - containerPort: 9092
+      restartPolicy: Always
