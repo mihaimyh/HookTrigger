@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.AspNetCore.IPLogging;
 using System.Net;
 
 namespace HookTrigger.Api
@@ -35,7 +36,11 @@ namespace HookTrigger.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseIPAddressLogging();
+
             app.UseHttpsRedirection();
+
+            app.UseSerilogRequestLogging(opts => opts.EnrichDiagnosticContext = LogEnricher.EnrichFromRequest);
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
@@ -43,8 +48,6 @@ namespace HookTrigger.Api
             });
 
             app.UseSwaggerr(provider);
-
-            app.UseSerilogRequestLogging(opts => opts.EnrichDiagnosticContext = LogEnricher.EnrichFromRequest);
 
             app.UseRouting();
 
@@ -64,6 +67,8 @@ namespace HookTrigger.Api
             Configuration.Bind("Producer", config);
             config.ClientId = Dns.GetHostName();
             services.AddSingleton(config);
+
+            services.AddIPAddressLogging();
 
             services.AddControllers()
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>())
