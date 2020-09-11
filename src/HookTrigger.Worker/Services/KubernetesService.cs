@@ -1,4 +1,4 @@
-﻿using k8s;
+﻿using HookTrigger.Worker.Brokers;
 using k8s.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -11,42 +11,23 @@ using System.Threading.Tasks;
 
 namespace HookTrigger.Worker.Services
 {
-    internal class KubernetesService : IKubernetesService
+    public class KubernetesService : IKubernetesService
     {
+        private readonly IKubernetesBroker _kubernetesBroker;
         private readonly ILogger<KubernetesService> _logger;
 
+        //TODO: Move this to appsettings.json
         private readonly List<string> _reservedNamespaces = new List<string>{
                     "cert-manager", "ingress-nginx", "kube-system", "kubernetes-dashboard","metallb-system"
          };
 
-        private IKubernetes _client;
-
-        //TODO: Move this to appsettings.json
-        public KubernetesService(ILogger<KubernetesService> logger)
+        public KubernetesService(ILogger<KubernetesService> logger, IKubernetesBroker kubernetesBroker)
         {
             _logger = logger;
-
-            ConfigureClient();
+            _kubernetesBroker = kubernetesBroker ?? throw new ArgumentNullException(nameof(kubernetesBroker));
         }
 
-        public async Task ListNamespacesAsync()
-        {
-            var list = await _client?.ListNamespaceAsync();
-
-            if (list?.Items?.Count > 0)
-            {
-                foreach (var item in list?.Items)
-                {
-                    _logger.LogDebug(item.Metadata.Name);
-                }
-            }
-            else
-            {
-                _logger.LogDebug("No namespaces were found in the cluster.");
-            }
-        }
-
-        public async Task PatchAllDeploymentAsync(string repoName, string tag, CancellationToken cancellationToken = default)
+        public async Task<int> PatchAllDeploymentAsync(string repoName, string tag, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(repoName))
             {
@@ -60,14 +41,14 @@ namespace HookTrigger.Worker.Services
 
             try
             {
-                var deployments = await FindDeploymentByImageAsync(repoName);
+                var deployments = await _kubernetesBroker.FindDeploymentByImageAsync(repoName);
 
-                ThrowIfReseverdNamespace(_reservedNamespaces, deployments);
+                ThrowIfProtectedNamespace(_reservedNamespaces, deployments);
 
-                if (deployments.Count > 0)
+                var patchedDeployments = new List<V1Deployment>();
+
+                if (deployments?.Count > 0)
                 {
-                    var containers = deployments[0]?.Spec?.Template?.Spec?.Containers;
-
                     foreach (var deployment in deployments)
                     {
                         var patch = new JsonPatchDocument<V1Deployment>();
@@ -88,14 +69,19 @@ namespace HookTrigger.Worker.Services
 
                         _logger.LogDebug("Sending request to the API to patch the deployment {Deployment}.", deployment?.Metadata?.Name);
 
-                        var patchedDeployment = await _client.PatchNamespacedDeploymentAsync(new V1Patch(patch), deployment?.Metadata?.Name,
+                        var patchedDeployment = await _kubernetesBroker.PatchNamespacedDeploymentAsync(new V1Patch(patch), deployment?.Metadata?.Name,
                              deployment?.Metadata?.NamespaceProperty, cancellationToken: cancellationToken);
+
+                        patchedDeployments.Add(patchedDeployment);
                     }
                 }
+
+                return patchedDeployments.Count;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while trying to patch the deployment.");
+                throw;
             }
 
             //try
@@ -143,130 +129,7 @@ namespace HookTrigger.Worker.Services
             //}
         }
 
-        private void ConfigureClient()
-        {
-            var k8SClientConfig = KubernetesClientConfiguration.BuildDefaultConfig();
-            //var k8SClientConfig = KubernetesClientConfiguration.BuildDefaultConfig();
-            _client = new Kubernetes(k8SClientConfig);
-        }
-
-        private async Task CreateDeploymentAsync()
-        {
-            var labels = new Dictionary<string, string> { { "app", "nginx" } };
-
-            var deployment = new V1Deployment
-            {
-                ApiVersion = "apps/v1",
-                Kind = "Deployment",
-                Metadata = new V1ObjectMeta
-                {
-                    Name = $"nginx-{DateTime.Now.Day}.{DateTime.Now.Hour}.{DateTime.Now.Minute}.{DateTime.Now.Second}.{DateTime.Now.Millisecond}",
-                    Labels = labels
-                },
-                Spec = new V1DeploymentSpec
-                {
-                    Replicas = 1,
-                    Selector = new V1LabelSelector
-                    {
-                        MatchLabels = labels
-                    },
-                    Template = new V1PodTemplateSpec
-                    {
-                        Metadata = new V1ObjectMeta
-                        {
-                            Labels = labels
-                        },
-                        Spec = new V1PodSpec
-                        {
-                            Containers = new List<V1Container>
-                            {
-                                new V1Container
-                                {
-                                    Image = "nginx",
-                                    Name = "nginx",
-                                    Ports = new List<V1ContainerPort>
-                                    {
-                                        new V1ContainerPort
-                                        {
-                                            ContainerPort = 80
-                                        }
-                                    },
-                                    ImagePullPolicy = "Always"
-                                }
-                            }
-                        }
-                    }
-                },
-            };
-
-            _logger.LogDebug("Launching a new Nginx deployment.");
-
-            var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, "default");
-        }
-
-        private async Task<List<V1Deployment>> DeleteDeploymentAsync(string repoName)
-        {
-            var deployments = await FindDeploymentByImageAsync(repoName);
-
-            if (deployments?.Count > 0)
-            {
-                ThrowIfReseverdNamespace(_reservedNamespaces, deployments);
-
-                deployments.ForEach(x => _logger.LogDebug("Deleting deployment with name {Name} from namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata.NamespaceProperty));
-                deployments.ForEach(async x => await _client.DeleteNamespacedDeploymentAsync(x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
-            }
-
-            return deployments;
-        }
-
-        private async Task<List<V1Deployment>> FindDeploymentByImageAsync(string imageName)
-        {
-            if (string.IsNullOrWhiteSpace(imageName))
-            {
-                throw new ArgumentException($"'{nameof(imageName)}' cannot be null or whitespace", nameof(imageName));
-            }
-
-            var deployments = await _client.ListDeploymentForAllNamespacesAsync();
-
-            if (deployments?.Items?.Count <= 0)
-            {
-                _logger.LogWarning("No deployments were found on the cluster.");
-
-                return null;
-            }
-
-            return GetDeploymentsByImageName(imageName, deployments);
-
-            //if (matchingDeployments?.Count <= 0)
-            //{
-            //    _logger.LogWarning("No deployments with name matching {Name} were found.", imageName);
-
-            //    var deploymentsContainingName = deployments?.Items?.ToList().FindAll(x => x.Spec.Template.Spec.Containers[0].Image.ToLowerInvariant().Contains(imageName.ToLowerInvariant()));
-
-            //    if (deploymentsContainingName?.Count > 0)
-            //    {
-            //        deploymentsContainingName?.ForEach(x => _logger.LogDebug("Found following deployment with {Name} in namespace {Namespace}.", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty));
-            //    }
-            //}
-        }
-
-        private List<V1Deployment> GetDeploymentsByImageName(string imageName, V1DeploymentList deployments)
-        {
-            var matchingDeployments = deployments?.Items?.ToList().FindAll(x =>
-            {
-                foreach (var container in x.Spec?.Template?.Spec?.Containers)
-                {
-                    _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty);
-                    return container.Image.Split(":")[0].ToLowerInvariant().Equals(imageName.ToLowerInvariant());
-                }
-
-                return false;
-                //return x.Spec.Template.Spec.Containers[0].Image.Split(":")[0].ToLowerInvariant().Equals(imageName.ToLowerInvariant());
-            });
-            return matchingDeployments;
-        }
-
-        private void ThrowIfReseverdNamespace(List<string> ignoredNamespaces, List<V1Deployment> deployments)
+        private void ThrowIfProtectedNamespace(List<string> ignoredNamespaces, List<V1Deployment> deployments)
         {
             foreach (var deploy in deployments.Where(deploy => ignoredNamespaces.Contains(deploy?.Metadata?.NamespaceProperty?.ToLowerInvariant())))
             {

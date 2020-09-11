@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using HookTrigger.Worker.Brokers;
 using HookTrigger.Worker.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ namespace HookTrigger.Worker
                     var config = new ConsumerConfig();
                     Configuration.Bind("Consumer", config);
                     services.AddSingleton(config);
+                    services.AddSingleton<IKubernetesBroker, KubernetesBroker>();
                     services.AddSingleton<IKubernetesService, KubernetesService>();
                     services.AddHostedService<KubernetesWorker>();
                 }).UseSerilog();
