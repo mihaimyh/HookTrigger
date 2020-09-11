@@ -51,7 +51,7 @@ namespace HookTrigger.Worker
                     var message = JsonSerializer.Deserialize<DockerHubPayload>(cr.Message.Value);
                     _logger.LogInformation("Received following message from Kafka: {@message}", message);
 
-                    await _kubernetesService.RestartDeploymentAsync(message?.Repository?.RepoName, message?.PushData?.Tag);
+                    await _kubernetesService.PatchAllDeploymentAsync(message?.Repository?.RepoName, message?.PushData?.Tag, stoppingToken);
                 }
             }
             catch (Exception ex)
