@@ -27,11 +27,11 @@ namespace HookTrigger.Worker.Services
             _kubernetesBroker = kubernetesBroker ?? throw new ArgumentNullException(nameof(kubernetesBroker));
         }
 
-        public async Task<int> PatchAllDeploymentAsync(string repoName, string tag, CancellationToken cancellationToken = default)
+        public async Task<int> PatchAllDeploymentAsync(string imageName, string tag, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(repoName))
+            if (string.IsNullOrWhiteSpace(imageName))
             {
-                throw new ArgumentException($"'{nameof(repoName)}' cannot be null or whitespace", nameof(repoName));
+                throw new ArgumentException($"'{nameof(imageName)}' cannot be null or whitespace", nameof(imageName));
             }
 
             if (string.IsNullOrWhiteSpace(tag))
@@ -41,94 +41,66 @@ namespace HookTrigger.Worker.Services
 
             try
             {
-                var deployments = await _kubernetesBroker.FindDeploymentByImageAsync(repoName);
+                var deployments = await _kubernetesBroker.FindDeploymentsByImageAsync(imageName);
 
                 ThrowIfProtectedNamespace(_reservedNamespaces, deployments);
 
-                var patchedDeployments = new List<V1Deployment>();
-
-                if (deployments?.Count > 0)
-                {
-                    foreach (var deployment in deployments)
-                    {
-                        var patch = new JsonPatchDocument<V1Deployment>();
-                        foreach (var container in (deployment?.Spec?.Template?.Spec?.Containers).Where(container => !string.IsNullOrWhiteSpace(tag)))
-                        {
-                            _logger.LogDebug("Setting image tag to {Tag}.", tag);
-                            var image = container?.Image?.Split(":")[0];
-                            if (!string.IsNullOrWhiteSpace(image))
-                            {
-                                image = $"{image}:{tag}";
-                                _logger.LogDebug("New image name is {Image}", image);
-                                patch.Replace(e => e.Spec.Template.Spec.Containers[0].Image, image);
-
-                                var random = new Random();
-                                patch.Replace(e => e.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(10, 30));
-                            }
-                        }
-
-                        _logger.LogDebug("Sending request to the API to patch the deployment {Deployment}.", deployment?.Metadata?.Name);
-
-                        var patchedDeployment = await _kubernetesBroker.PatchNamespacedDeploymentAsync(new V1Patch(patch), deployment?.Metadata?.Name,
-                             deployment?.Metadata?.NamespaceProperty, cancellationToken: cancellationToken);
-
-                        patchedDeployments.Add(patchedDeployment);
-                    }
-                }
+                var updatedDeployments = UpdateImageTag(imageName, tag, deployments);
 
                 //TODO: Return a more detailed response?
 
-                return patchedDeployments.Count;
+                return await PatchDeploymentsAsync(updatedDeployments, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while trying to patch the deployment.");
                 throw;
             }
+        }
 
-            //try
-            //{
-            //    var deployments = await DeleteDeploymentAsync(repoName);
+        private JsonPatchDocument<V1Deployment> CreateJsonPatchDocument(V1Deployment deployment)
+        {
+            var patch = new JsonPatchDocument<V1Deployment>();
+            var random = new Random();
 
-            //    if (deployments?.Count > 0)
-            //    {
-            //        var deployment = deployments?[0];
+            patch.Replace(s => s.Spec.Template.Spec, deployment.Spec.Template.Spec);
+            patch.Replace(s => s.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(10, 30));
 
-            //        _logger.LogDebug("Creating a new deployment with name {Name} in namespace {Namespace}.", deployment?.Metadata?.Name, deployment?.Metadata?.NamespaceProperty);
+            return patch;
+        }
 
-            //        deployment.Metadata.ResourceVersion = string.Empty;
+        private async Task<int> PatchDeploymentsAsync(List<V1Deployment> deployments, CancellationToken cancellationToken = default)
+        {
+            var patchTasks = new List<Task>();
 
-            //        if (!string.IsNullOrWhiteSpace(tag))
-            //        {
-            //            _logger.LogDebug("Setting image tag to {Tag}.", tag);
+            if (deployments?.Count > 0)
+            {
+                foreach (var deployment in deployments)
+                {
+                    var jsonPatch = CreateJsonPatchDocument(deployment);
 
-            //            var image = deployment?.Spec?.Template?.Spec?.Containers?[0]?.Image?.Split(":")[0];
+                    patchTasks.Add(_kubernetesBroker.PatchNamespacedDeploymentAsync(new V1Patch(jsonPatch),
+                                                                                    deployment.Metadata?.Name,
+                                                                                    deployment?.Metadata?.NamespaceProperty,
+                                                                                    cancellationToken));
+                }
+            }
 
-            //            if (!string.IsNullOrWhiteSpace(image))
-            //            {
-            //                image = $"{image}:{tag}";
-            //                _logger.LogDebug("New image name is {Image}", image);
-            //                deployment.Spec.Template.Spec.Containers[0].Image = image;
-            //            }
-            //        }
+            await Task.WhenAll(patchTasks);
 
-            //        var deploy = await _client.CreateNamespacedDeploymentAsync(deployment, deployment?.Metadata?.NamespaceProperty);
+            return patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
+        }
 
-            //        _logger.LogDebug("A new deployment with id {Id} and image {Image} was created at {Timestamp}.", deploy?.Metadata?.Uid, deploy?.Spec?.Template?.Spec?.Containers?[0]?.Image, deploy?.Metadata?.CreationTimestamp);
-            //    }
-            //    else
-            //    {
-            //        _logger.LogDebug("No deployments were found.");
-            //    }
-            //}
-            //catch (HttpOperationException ex)
-            //{
-            //    _logger.LogError(ex, ex.Response.Content);
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogError(ex, "An error occurred while trying to restart deployment.");
-            //}
+        private void SetImageTag(string tag, V1Container container)
+        {
+            var image = container?.Image?.Split(":")[0];
+            _logger.LogDebug("Setting image tag to {Tag}.", tag);
+            if (!string.IsNullOrWhiteSpace(image))
+            {
+                image = $"{image}:{tag}";
+                _logger.LogDebug("New image name is {Image}", image);
+                container.Image = image;
+            }
         }
 
         private void ThrowIfProtectedNamespace(List<string> ignoredNamespaces, List<V1Deployment> deployments)
@@ -140,6 +112,34 @@ namespace HookTrigger.Worker.Services
                     deploy?.Metadata?.NamespaceProperty);
                 throw new InvalidOperationException("Cannot delete a deployment from a reserved namespace.");
             }
+        }
+
+        private List<V1Deployment> UpdateImageTag(string imageName, string tag, List<V1Deployment> deployments)
+        {
+            var updatedDeployments = new List<V1Deployment>();
+
+            if (deployments?.Count > 0)
+            {
+                foreach (var deployment in deployments)
+                {
+                    foreach (var container in deployment?.Spec?.Template?.Spec?.Containers.SkipWhile(x => !x.Image.Equals(imageName)))
+                    {
+                        if (container is null)
+                        {
+                            // Log it and go to the next container.
+                            _logger.LogDebug("Deployment {Deployment} has a null container, skipping it.", deployment?.Metadata?.Name);
+                            continue;
+                        }
+                        SetImageTag(tag, container);
+                    }
+                    if (!updatedDeployments.Contains(deployment))
+                    {
+                        updatedDeployments.Add(deployment);
+                    }
+                }
+            }
+
+            return updatedDeployments;
         }
     }
 }
