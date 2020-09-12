@@ -21,7 +21,7 @@ namespace HookTrigger.Worker.Brokers
             ConfigureK8sClient();
         }
 
-        public async Task<List<V1Deployment>> FindDeploymentByImageAsync(string imageName)
+        public async Task<List<V1Deployment>> FindDeploymentsByImageAsync(string imageName)
         {
             if (string.IsNullOrWhiteSpace(imageName))
             {
@@ -125,7 +125,7 @@ namespace HookTrigger.Worker.Brokers
 
         private async Task<List<V1Deployment>> DeleteDeploymentAsync(string repoName)
         {
-            var deployments = await FindDeploymentByImageAsync(repoName);
+            var deployments = await FindDeploymentsByImageAsync(repoName);
 
             if (deployments?.Count > 0)
             {
