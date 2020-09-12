@@ -88,7 +88,9 @@ namespace HookTrigger.Worker.Services
 
             await Task.WhenAll(patchTasks);
 
-            return patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
+            var successfullTasks = patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
+
+            return successfullTasks;
         }
 
         private void SetImageTag(string tag, V1Container container)
@@ -131,10 +133,11 @@ namespace HookTrigger.Worker.Services
                             continue;
                         }
                         SetImageTag(tag, container);
-                    }
-                    if (!updatedDeployments.Contains(deployment))
-                    {
-                        updatedDeployments.Add(deployment);
+
+                        if (!updatedDeployments.Contains(deployment))
+                        {
+                            updatedDeployments.Add(deployment);
+                        }
                     }
                 }
             }
