@@ -28,11 +28,41 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         [InlineData("nginx", "latest", "test", 1)]
         [InlineData("nginx", "latest", "test", 4)]
         [InlineData("nginx", "latest", "test", 0)]
+        public async Task ShouldNotPatchDeploymentsWithDifferentContainerImageAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
+        {
+            var deployList = GetDeployListHavingDifferentContainerImage(imageName, protectedNamespace, numberOfDeployments);
+
+            _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
+
+            var patchedDeploys = await _kubernetesService.PatchAllDeploymentAsync(imageName, tag);
+
+            patchedDeploys.Should().Be(0);
+        }
+
+        [Theory]
+        [InlineData("nginx", "latest", "test", 1)]
+        [InlineData("nginx", "latest", "test", 4)]
+        [InlineData("nginx", "latest", "test", 0)]
         public async Task ShouldPatchDeploymentsAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeployList(imageName, protectedNamespace, numberOfDeployments);
+            var deployList = GetDeployListHavingSameContainerImage(imageName, protectedNamespace, numberOfDeployments);
 
-            _broker.Setup(x => x.FindDeploymentByImageAsync(imageName)).ReturnsAsync(deployList);
+            _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
+
+            var patchedDeploys = await _kubernetesService.PatchAllDeploymentAsync(imageName, tag);
+
+            patchedDeploys.Should().Be(numberOfDeployments);
+        }
+
+        [Theory]
+        [InlineData("nginx", "latest", "test", 1)]
+        [InlineData("nginx", "latest", "test", 3)]
+        [InlineData("nginx", "latest", "test", 0)]
+        public async Task ShouldPatchOnlyMatchingDeploymentsAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
+        {
+            var deployList = GetDeploysWithExistingAndNonExistingImages(imageName, protectedNamespace, numberOfDeployments);
+
+            _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
             var patchedDeploys = await _kubernetesService.PatchAllDeploymentAsync(imageName, tag);
 
@@ -53,7 +83,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             }
             };
 
-            _broker.Setup(x => x.FindDeploymentByImageAsync(imageName)).ReturnsAsync(deployList);
+            _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
             async Task patch() => await _kubernetesService.PatchAllDeploymentAsync(imageName, tag);
 
@@ -75,7 +105,27 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             await Assert.ThrowsAsync<ArgumentException>(patch);
         }
 
-        private static List<V1Deployment> GetDeployList(string imageName, string @namespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeployListHavingDifferentContainerImage(string imageName, string @namespace, int numberOfDeploys)
+        {
+            var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
+            {
+                b.Metadata = A.Fake<V1ObjectMeta>(aa => aa.ConfigureFake(bb => bb.NamespaceProperty = @namespace));
+                b.Spec = A.Fake<V1DeploymentSpec>(c => c.ConfigureFake(d =>
+                {
+                    d.Template = A.Fake<V1PodTemplateSpec>(e =>
+                    e.ConfigureFake(f =>
+                        f.Spec = A.Fake<V1PodSpec>(g =>
+                            g.ConfigureFake(h =>
+                                h.Containers = A.CollectionOfFake<V1Container>(numberOfDeploys, i =>
+                                    i.ConfigureFake(h =>
+                                        h.Image = RandomString(numberOfDeploys)))))));
+                }));
+            }));
+
+            return output.ToList();
+        }
+
+        private static List<V1Deployment> GetDeployListHavingSameContainerImage(string imageName, string @namespace, int numberOfDeploys)
         {
             var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
@@ -93,6 +143,43 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             }));
 
             return output.ToList();
+        }
+
+        private static List<V1Deployment> GetDeploysWithExistingAndNonExistingImages(string imageName, string @namespace, int numberOfDeploys)
+        {
+            var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
+            {
+                b.Metadata = A.Fake<V1ObjectMeta>(aa => aa.ConfigureFake(bb => bb.NamespaceProperty = @namespace));
+                b.Spec = A.Fake<V1DeploymentSpec>(c => c.ConfigureFake(d =>
+                {
+                    d.Template = A.Fake<V1PodTemplateSpec>(e =>
+                    e.ConfigureFake(f =>
+                        f.Spec = A.Fake<V1PodSpec>(g =>
+                            g.ConfigureFake(h =>
+                                h.Containers = new List<V1Container>
+                                {
+                                    new V1Container
+                                    {
+                                        Image = imageName
+                                    },
+                                    new V1Container
+                                    {
+                                        Image = RandomString(5)
+                                    }
+                                }))));
+                }));
+            }));
+
+            return output.ToList();
+        }
+
+        private static string RandomString(int length)
+        {
+            var _random = new Random();
+
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[_random.Next(s.Length)]).ToArray());
         }
     }
 }
