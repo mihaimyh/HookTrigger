@@ -79,6 +79,8 @@ namespace HookTrigger.Worker.Services
                 {
                     var jsonPatch = CreateJsonPatchDocument(deployment);
 
+                    _logger.LogDebug("Deployment {@Deployment} marked for patching.", deployment);
+
                     patchTasks.Add(_kubernetesBroker.PatchNamespacedDeploymentAsync(new V1Patch(jsonPatch),
                                                                                     deployment.Metadata?.Name,
                                                                                     deployment?.Metadata?.NamespaceProperty,
@@ -86,9 +88,19 @@ namespace HookTrigger.Worker.Services
                 }
             }
 
+            _logger.LogDebug("Sending patch requests to K8S API server.");
             await Task.WhenAll(patchTasks);
 
             var successfullTasks = patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
+
+            var failedTasks = patchTasks.FindAll(x => x.IsFaulted);
+
+            _logger.LogDebug("Successfully patched {Number} deployment(s).", successfullTasks);
+
+            if (failedTasks?.Count > 0)
+            {
+                _logger.LogError("Following tasks failed, @{FailedTasks}", failedTasks);
+            }
 
             return successfullTasks;
         }
@@ -124,7 +136,9 @@ namespace HookTrigger.Worker.Services
             {
                 foreach (var deployment in deployments)
                 {
-                    foreach (var container in deployment?.Spec?.Template?.Spec?.Containers.SkipWhile(x => !x.Image.Equals(imageName)))
+                    foreach (var container in deployment?.Spec?.Template?.Spec?.Containers.SkipWhile(x => !x.Image.ToLowerInvariant()
+                                                                                                            .Equals($"{imageName.ToLowerInvariant()}:" +
+                                                                                                            $"{tag.ToLowerInvariant()}")))
                     {
                         if (container is null)
                         {
