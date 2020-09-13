@@ -30,7 +30,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         [InlineData("nginx", "latest", "test", 0)]
         public async Task ShouldNotPatchDeploymentsWithDifferentContainerImageAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeployListHavingDifferentContainerImage(imageName, tag, protectedNamespace, numberOfDeployments);
+            var deployList = GetDeployListHavingDifferentContainerImage(tag, protectedNamespace, numberOfDeployments);
 
             _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
@@ -105,7 +105,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             await Assert.ThrowsAsync<ArgumentException>(patch);
         }
 
-        private static List<V1Deployment> GetDeployListHavingDifferentContainerImage(string imageName, string tag, string @namespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeployListHavingDifferentContainerImage(string tag, string @namespace, int numberOfDeploys)
         {
             var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
