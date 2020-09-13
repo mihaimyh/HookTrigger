@@ -80,6 +80,8 @@ namespace HookTrigger.Worker.Services
 
             patch.Replace(s => s.Spec.Template.Metadata.Annotations, date);
 
+            //TODO: Get the number of revision to be kept from configuration.
+            patch.Replace(s => s.Spec.RevisionHistoryLimit, 1);
             patch.Replace(s => s.Spec.Template.Spec, deployment.Spec.Template.Spec);
             patch.Replace(s => s.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(31, 60));
 
