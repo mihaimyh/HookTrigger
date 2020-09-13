@@ -58,6 +58,13 @@ namespace HookTrigger.Worker.Services
             }
         }
 
+        private static KeyValuePair<V1Deployment, IEnumerable<V1Container>> GetDeploymentsWithContainerImage(V1Deployment deployment, string imageName)
+        {
+            var containersWithCorrectImage = deployment.Spec?.Template?.Spec?.Containers.Where(c => c.Image.ToLowerInvariant().StartsWith(imageName));
+
+            return KeyValuePair.Create(deployment, containersWithCorrectImage);
+        }
+
         private JsonPatchDocument<V1Deployment> CreateJsonPatchDocument(V1Deployment deployment)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
@@ -135,32 +142,24 @@ namespace HookTrigger.Worker.Services
 
         private List<V1Deployment> UpdateImageTag(string imageName, string tag, List<V1Deployment> deployments)
         {
-            var updatedDeployments = new List<V1Deployment>();
-
-            if (deployments?.Count > 0)
+            if (deployments == null || deployments?.Count <= 0)
             {
-                foreach (var deployment in deployments)
-                {
-                    foreach (var container in deployment?.Spec?.Template?.Spec?.Containers.SkipWhile(x => !x.Image.ToLowerInvariant()
-                                                                                                            .StartsWith(imageName.ToLowerInvariant())))
-                    {
-                        if (container is null)
-                        {
-                            // Log it and go to the next container.
-                            _logger.LogDebug("Deployment {Deployment} has a null container, skipping it.", deployment?.Metadata?.Name);
-                            continue;
-                        }
-                        SetImageTag(tag, container);
-
-                        if (!updatedDeployments.Contains(deployment))
-                        {
-                            updatedDeployments.Add(deployment);
-                        }
-                    }
-                }
+                return new List<V1Deployment>();
             }
 
-            return updatedDeployments;
+            var imageNameLower = imageName.ToLowerInvariant();
+
+            var matches = deployments
+                .Select(deployment => GetDeploymentsWithContainerImage(deployment, imageNameLower))
+                .Where(kvp => kvp.Value != null && kvp.Value.Any())
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            foreach (var container in matches.Values.SelectMany(x => x))
+            {
+                SetImageTag(tag, container);
+            }
+
+            return matches.Keys.ToList();
         }
     }
 }
