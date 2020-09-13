@@ -87,33 +87,38 @@ namespace HookTrigger.Worker.Services
                                                                                     cancellationToken));
                 }
             }
-
-            _logger.LogDebug("Sending patch requests to K8S API server.");
-            await Task.WhenAll(patchTasks);
-
-            var successfullTasks = patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
-
-            var failedTasks = patchTasks.FindAll(x => x.IsFaulted);
-
-            _logger.LogDebug("Successfully patched {Number} deployment(s).", successfullTasks);
-
-            if (failedTasks?.Count > 0)
+            if (patchTasks?.Count > 0)
             {
-                _logger.LogError("Following tasks failed, @{FailedTasks}", failedTasks);
+                _logger.LogDebug("Sending patch requests to K8S API server.");
+                await Task.WhenAll(patchTasks);
+
+                var successfullTasks = patchTasks.FindAll(x => x.IsCompletedSuccessfully).Count;
+
+                var failedTasks = patchTasks.FindAll(x => x.IsFaulted);
+
+                _logger.LogDebug("Successfully patched {Number} deployment(s).", successfullTasks);
+
+                if (failedTasks?.Count > 0)
+                {
+                    _logger.LogError("Following tasks failed, @{FailedTasks}", failedTasks);
+                }
+
+                return successfullTasks;
             }
 
-            return successfullTasks;
+            return 0;
         }
 
         private void SetImageTag(string tag, V1Container container)
         {
             var image = container?.Image?.Split(":")[0];
+            _logger.LogDebug("Found container {Container} having image {Image}.", container?.Name, image);
             _logger.LogDebug("Setting image tag to {Tag}.", tag);
             if (!string.IsNullOrWhiteSpace(image))
             {
                 image = $"{image}:{tag}";
-                _logger.LogDebug("New image name is {Image}", image);
                 container.Image = image;
+                _logger.LogDebug("New image name is {Image}", container?.Image);
             }
         }
 
@@ -137,8 +142,7 @@ namespace HookTrigger.Worker.Services
                 foreach (var deployment in deployments)
                 {
                     foreach (var container in deployment?.Spec?.Template?.Spec?.Containers.SkipWhile(x => !x.Image.ToLowerInvariant()
-                                                                                                            .Equals($"{imageName.ToLowerInvariant()}:" +
-                                                                                                            $"{tag.ToLowerInvariant()}")))
+                                                                                                            .StartsWith(imageName.ToLowerInvariant())))
                     {
                         if (container is null)
                         {
