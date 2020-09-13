@@ -44,8 +44,15 @@ namespace HookTrigger.Worker
             {
                 consumer.Subscribe(topic);
                 _logger.LogInformation($"Subscribed to topic {topic}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "A Kafka error occurred.");
+            }
 
-                while (!stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
                 {
                     var cr = consumer.Consume(stoppingToken);
                     var message = JsonSerializer.Deserialize<DockerHubPayload>(cr.Message.Value);
@@ -53,10 +60,10 @@ namespace HookTrigger.Worker
 
                     await _kubernetesService.PatchAllDeploymentAsync(message?.Repository?.RepoName, message?.PushData?.Tag, stoppingToken);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred.");
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex, "An error occurred while calling K8S API.");
+                }
             }
         }
     }
