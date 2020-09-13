@@ -7,6 +7,7 @@ metadata:
     app: hooktrigger-api
 spec:
   replicas: 1
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       app: hooktrigger-api
