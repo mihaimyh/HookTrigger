@@ -30,7 +30,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         [InlineData("nginx", "latest", "test", 0)]
         public async Task ShouldNotPatchDeploymentsWithDifferentContainerImageAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeployListHavingDifferentContainerImage(imageName, protectedNamespace, numberOfDeployments);
+            var deployList = GetDeployListHavingDifferentContainerImage(imageName, tag, protectedNamespace, numberOfDeployments);
 
             _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
@@ -45,7 +45,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         [InlineData("nginx", "latest", "test", 0)]
         public async Task ShouldPatchDeploymentsAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeployListHavingSameContainerImage(imageName, protectedNamespace, numberOfDeployments);
+            var deployList = GetDeployListHavingSameContainerImage(imageName, tag, protectedNamespace, numberOfDeployments);
 
             _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
@@ -60,7 +60,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
         [InlineData("nginx", "latest", "test", 0)]
         public async Task ShouldPatchOnlyMatchingDeploymentsAsync(string imageName, string tag, string protectedNamespace, int numberOfDeployments)
         {
-            var deployList = GetDeploysWithExistingAndNonExistingImages(imageName, protectedNamespace, numberOfDeployments);
+            var deployList = GetDeploysWithExistingAndNonExistingImages(imageName, tag, protectedNamespace, numberOfDeployments);
 
             _broker.Setup(x => x.FindDeploymentsByImageAsync(imageName)).ReturnsAsync(deployList);
 
@@ -105,7 +105,7 @@ namespace HookTrigger.Tests.KubernetesServiceTests
             await Assert.ThrowsAsync<ArgumentException>(patch);
         }
 
-        private static List<V1Deployment> GetDeployListHavingDifferentContainerImage(string imageName, string @namespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeployListHavingDifferentContainerImage(string imageName, string tag, string @namespace, int numberOfDeploys)
         {
             var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
@@ -118,14 +118,14 @@ namespace HookTrigger.Tests.KubernetesServiceTests
                             g.ConfigureFake(h =>
                                 h.Containers = A.CollectionOfFake<V1Container>(numberOfDeploys, i =>
                                     i.ConfigureFake(h =>
-                                        h.Image = RandomString(numberOfDeploys)))))));
+                                        h.Image = $"{RandomString(numberOfDeploys)}:{tag}"))))));
                 }));
             }));
 
             return output.ToList();
         }
 
-        private static List<V1Deployment> GetDeployListHavingSameContainerImage(string imageName, string @namespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeployListHavingSameContainerImage(string imageName, string tag, string @namespace, int numberOfDeploys)
         {
             var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
@@ -138,14 +138,14 @@ namespace HookTrigger.Tests.KubernetesServiceTests
                             g.ConfigureFake(h =>
                                 h.Containers = A.CollectionOfFake<V1Container>(numberOfDeploys, i =>
                                     i.ConfigureFake(h =>
-                                        h.Image = imageName))))));
+                                        h.Image = $"{imageName}:{tag}"))))));
                 }));
             }));
 
             return output.ToList();
         }
 
-        private static List<V1Deployment> GetDeploysWithExistingAndNonExistingImages(string imageName, string @namespace, int numberOfDeploys)
+        private static List<V1Deployment> GetDeploysWithExistingAndNonExistingImages(string imageName, string tag, string @namespace, int numberOfDeploys)
         {
             var output = A.CollectionOfFake<V1Deployment>(numberOfDeploys, a => a.ConfigureFake(b =>
             {
@@ -160,11 +160,11 @@ namespace HookTrigger.Tests.KubernetesServiceTests
                                 {
                                     new V1Container
                                     {
-                                        Image = imageName
+                                        Image = $"{imageName}:{tag}"
                                     },
                                     new V1Container
                                     {
-                                        Image = RandomString(5)
+                                        Image = $"{RandomString(5)}:{tag}"
                                     }
                                 }))));
                 }));
