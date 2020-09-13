@@ -60,9 +60,13 @@ namespace HookTrigger.Worker
 
                     await _kubernetesService.PatchAllDeploymentAsync(message?.Repository?.RepoName, message?.PushData?.Tag, stoppingToken);
                 }
+                catch (ConsumeException ex)
+                {
+                    _logger.LogError(ex, "Could not consume the specified Kafka topic.");
+                }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex, "An error occurred while calling K8S API.");
+                    _logger.LogCritical(ex, "An error occurred while calling K8s API.");
                 }
             }
         }
