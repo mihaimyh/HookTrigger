@@ -55,6 +55,7 @@ namespace HookTrigger.Api
                 {
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                 });
+                endpoints.MapHealthChecksUI();
                 endpoints.MapControllers();
             });
         }
