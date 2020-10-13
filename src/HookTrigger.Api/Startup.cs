@@ -1,6 +1,7 @@
 ﻿using AspNetCore.ApiVersioning;
 using Confluent.Kafka;
 using FluentValidation.AspNetCore;
+using HealthChecks.UI.Client;
 using HookTrigger.Api.Services;
 using HookTrigger.Core.Helpers.Serilog;
 using HookTrigger.Core.Models;
@@ -42,11 +43,6 @@ namespace HookTrigger.Api
 
             app.UseSerilogRequestLogging(opts => opts.EnrichDiagnosticContext = LogEnricher.EnrichFromRequest);
 
-            app.UseHealthChecks("/health", new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("kafka")
-            });
-
             app.UseSwaggerr(provider);
 
             app.UseRouting();
@@ -55,7 +51,10 @@ namespace HookTrigger.Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHealthChecksUI();
+                endpoints.MapHealthChecks("/health", new HealthCheckOptions
+                {
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
                 endpoints.MapControllers();
             });
         }

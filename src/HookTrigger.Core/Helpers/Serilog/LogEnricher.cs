@@ -28,12 +28,7 @@ namespace HookTrigger.Core.Helpers.Serilog
 
             var endpoint = httpContext.Features.Get<IEndpointFeature>()?.Endpoint;
 
-#if NETCOREAPP3_1
             return endpoint?.Metadata.GetMetadata<EndpointNameMetadata>()?.EndpointName;
-
-#else
-             return endpoint?.Metadata.GetMetadata<IRouteValuesAddressMetadata>()?.RouteName;
-#endif
         }
     }
 }
