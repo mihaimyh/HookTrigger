@@ -36,7 +36,11 @@ spec:
             - name: ASPNETCORE_Kestrel__Certificates__Default__Path
               value: /app/tls/codescu.com.pfx
             - name: Producer__BootstrapServers
-              value: kafka-server1.codescu.svc.cluster.local:9092            
+              value: kafka-server1.codescu.svc.cluster.local:9092
+            - name: HealthChecksUI__HealthChecks__0__Name
+              value: HookTrigger API
+            - name: HealthChecksUI__HealthChecks__0__Uri
+              value: https://docker-hub.mihaimyh.com/health
           image: mihaimyh/hooktrigger-api:latest
           imagePullPolicy: Always
           name: hooktrigger-api
