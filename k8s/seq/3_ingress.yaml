@@ -19,9 +19,9 @@ spec:
   tls:
   - hosts:
     - seq.codescu.com
-    secretName: wildcard-codescu-com
+    secretName: wildcard-mihaimyh-com
   rules:
-  - host: seq.codescu.com
+  - host: seq.mihaimyh.com
     http:
       paths:
       - backend:

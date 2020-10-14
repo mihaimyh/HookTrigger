@@ -18,11 +18,11 @@ metadata:
 spec:
   tls:
   - hosts:
-    - codescu.com
-    - '*.codescu.com'
-    secretName: wildcard-codescu-com
+    - mihaimyh.com
+    - '*.mihaimyh.com'
+    secretName: wildcard-mihaimyh-com
   rules:
-  - host: docker-hub.codescu.com
+  - host: docker-hub.mihaimyh.com
     http:
       paths:
       - backend:
