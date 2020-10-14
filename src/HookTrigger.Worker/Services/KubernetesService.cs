@@ -70,8 +70,20 @@ namespace HookTrigger.Worker.Services
             var patch = new JsonPatchDocument<V1Deployment>();
             var random = new Random();
 
+            // Add a new dummy annotation so that the deployment can be restarted even if the image is "latest"
+            // https://stackoverflow.com/questions/57559357/how-to-rolling-restart-pods-without-changing-deployment-yaml-in-kubernetes
+
+            var date = new Dictionary<string, string>
+            {
+                { "Date", DateTimeOffset.Now.ToUnixTimeSeconds().ToString() }
+            };
+
+            patch.Replace(s => s.Spec.Template.Metadata.Annotations, date);
+
+            //TODO: Get the number of revision to be kept from configuration.
+            patch.Replace(s => s.Spec.RevisionHistoryLimit, 1);
             patch.Replace(s => s.Spec.Template.Spec, deployment.Spec.Template.Spec);
-            patch.Replace(s => s.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(10, 30));
+            patch.Replace(s => s.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(31, 60));
 
             return patch;
         }
