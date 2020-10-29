@@ -42,9 +42,9 @@ spec:
             - name: HealthChecksUI__HealthChecks__0__Uri
               value: https://docker-hub.mihaimyh.com/health
             - name: HealthChecksUI__EvaluationTimeInSeconds
-              value: 3600
+              value: "3600"
             - name: HealthChecksUI__MinimumSecondsBetweenFailureNotifications
-              value: 3600
+              value: "3600"
           image: mihaimyh/hooktrigger-api:latest
           imagePullPolicy: Always
           name: hooktrigger-api
