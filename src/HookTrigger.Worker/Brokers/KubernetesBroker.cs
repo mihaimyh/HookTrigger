@@ -142,11 +142,23 @@ namespace HookTrigger.Worker.Brokers
             {
                 foreach (var container in x.Spec?.Template?.Spec?.Containers)
                 {
-                    if (container.Image.Split(":")[0].ToLowerInvariant().Equals(imageName.ToLowerInvariant()))
+                    if (imageName.Contains(":"))
                     {
-                        _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty);
+                        if (container.Image.Split(":")[0].ToLowerInvariant().Equals(imageName.Split(":")[0].ToLowerInvariant()))
+                        {
+                            _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty);
 
-                        return true;
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (container.Image.ToLowerInvariant().Equals(imageName.ToLowerInvariant()))
+                        {
+                            _logger.LogDebug("Found deployment with name {Name} in namespace {Namespace}", x?.Metadata?.Name, x?.Metadata?.NamespaceProperty);
+
+                            return true;
+                        }
                     }
                 }
 
