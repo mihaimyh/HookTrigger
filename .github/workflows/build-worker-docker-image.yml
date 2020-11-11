@@ -7,12 +7,12 @@ on:
     paths:
       - "src/HookTrigger.Worker/**"
       - "src/HookTrigger.Core/**"
-  pull_request:
-    branches:
-      - master
-    paths:
-      - "src/HookTrigger.Worker/**"
-      - "src/HookTrigger.Core/**"
+#   pull_request:
+#     branches:
+#       - master
+#     paths:
+#       - "src/HookTrigger.Worker/**"
+#       - "src/HookTrigger.Core/**"
 jobs:
   push:
     runs-on: ubuntu-latest
