@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Exceptions;
 using System;
 using System.IO;
 
@@ -24,7 +25,13 @@ namespace HookTrigger.Worker
                     services.AddSingleton<IKubernetesBroker, KubernetesBroker>();
                     services.AddSingleton<IKubernetesService, KubernetesService>();
                     services.AddHostedService<KubernetesWorker>();
-                }).UseSerilog();
+                }).UseSerilog((hostContext, loggerConfig) =>
+                {
+                    loggerConfig
+                        .ReadFrom.Configuration(hostContext.Configuration)
+                        .Enrich.WithExceptionDetails()
+                        .Enrich.WithProperty("ApplicationName", hostContext.HostingEnvironment.ApplicationName);
+                });
 
         public static void Main(string[] args)
         {
@@ -32,6 +39,7 @@ namespace HookTrigger.Worker
             {
                 Configuration = LoadConfiguration();
                 Log.Logger = new LoggerConfiguration()
+                    .Enrich.WithExceptionDetails()
                         .ReadFrom.Configuration(Configuration)
                         .CreateLogger();
                 Log.Logger.Information("Starting...");

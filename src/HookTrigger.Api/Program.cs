@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Exceptions;
 using System;
 using System.IO;
 
@@ -38,6 +39,7 @@ namespace HookTrigger.Api
                 {
                     loggerConfig
                         .ReadFrom.Configuration(hostContext.Configuration)
+                        .Enrich.WithExceptionDetails()
                         .Enrich.WithProperty("ApplicationName", hostContext.HostingEnvironment.ApplicationName);
                 });
 
