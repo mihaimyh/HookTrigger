@@ -58,14 +58,7 @@ namespace HookTrigger.Worker.Services
             }
         }
 
-        private static KeyValuePair<V1Deployment, IEnumerable<V1Container>> GetDeploymentsWithContainerImage(V1Deployment deployment, string imageName)
-        {
-            var containersWithCorrectImage = deployment.Spec?.Template?.Spec?.Containers.Where(c => c.Image.ToLowerInvariant().StartsWith(imageName));
-
-            return KeyValuePair.Create(deployment, containersWithCorrectImage);
-        }
-
-        private JsonPatchDocument<V1Deployment> CreateJsonPatchDocument(V1Deployment deployment)
+        private static JsonPatchDocument<V1Deployment> CreateJsonPatchDocument(V1Deployment deployment)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
             var random = new Random();
@@ -86,6 +79,13 @@ namespace HookTrigger.Worker.Services
             patch.Replace(s => s.Spec.Template.Spec.TerminationGracePeriodSeconds, random.Next(31, 60));
 
             return patch;
+        }
+
+        private static KeyValuePair<V1Deployment, IEnumerable<V1Container>> GetDeploymentsWithContainerImage(V1Deployment deployment, string imageName)
+        {
+            var containersWithCorrectImage = deployment.Spec?.Template?.Spec?.Containers.Where(c => c.Image.ToLowerInvariant().StartsWith(imageName));
+
+            return KeyValuePair.Create(deployment, containersWithCorrectImage);
         }
 
         private async Task<int> PatchDeploymentsAsync(List<V1Deployment> deployments, CancellationToken cancellationToken = default)
