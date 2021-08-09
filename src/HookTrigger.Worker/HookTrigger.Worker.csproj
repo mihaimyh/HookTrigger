@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<UserSecretsId>dotnet-HookTrigger.Worker-63B3A818-E5E6-4CDA-A707-A01D2B5AB319</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Confluent.Kafka" Version="1.6.2" />
-		<PackageReference Include="KubernetesClient" Version="4.0.15" />
-		<PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="5.0.3" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+		<PackageReference Include="Confluent.Kafka" Version="1.7.0" />
+		<PackageReference Include="KubernetesClient" Version="5.0.19" />
+		<PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="6.0.0-preview.6.21355.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0-preview.6.21352.12" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
 	</ItemGroup>
 
