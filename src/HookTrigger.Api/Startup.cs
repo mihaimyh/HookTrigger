@@ -101,9 +101,9 @@ namespace HookTrigger.Api
             services.AddHealthChecks()
                 .AddKafka(config, tags: new string[] { "kafka" });
             //.AddSqlServer(Configuration.GetConnectionString("Default"), tags: new string[] { "sqlserver" });
-            services
-                .AddHealthChecksUI()
-                .AddInMemoryStorage();
+            //services
+            //    .AddHealthChecksUI()
+            //    .AddInMemoryStorage();
         }
     }
 }
